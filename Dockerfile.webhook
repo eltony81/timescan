@@ -1,0 +1,14 @@
+FROM golang:1.26-alpine AS builder
+
+WORKDIR /app
+
+COPY e2e/webhook/main.go ./main.go
+
+RUN go build -o webhook-receiver main.go
+
+FROM alpine:latest
+WORKDIR /app
+COPY --from=builder /app/webhook-receiver /app/webhook-receiver
+
+EXPOSE 8080
+ENTRYPOINT ["/app/webhook-receiver"]
