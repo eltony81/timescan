@@ -31,7 +31,7 @@ Imagine you are running a server, a website, or a cloud application. Every secon
 - **Robust Anomaly Detectors**: Choose from Z-Score, EWMA (Exponentially Weighted Moving Average), and MAD (Median Absolute Deviation).
 - **Time-Series Decomposition**: Separate complex signals into `Trend`, `Seasonality`, and `Residual` components natively.
 - **Vector Pattern Matching**: Compress time-series shapes into small fixed-dimensional vectors using PAA (Piecewise Aggregate Approximation), ready to be shipped to Qdrant or Bbolt for similarity search.
-- **Highly Concurrent**: The `pipeline.Engine` coordinates streams safely and efficiently across Goroutines.
+- **Highly Concurrent**: The `pipeline.Engine` and `pipeline.StreamProcessor` coordinate stream channels safely and efficiently across Goroutines with context cancellation and zero leaks.
 
 ---
 
@@ -93,6 +93,7 @@ Here's how easy it is to embed `timescan` into your own Go code:
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 	"github.com/timescan/timescan/anomaly"
@@ -116,8 +117,9 @@ func main() {
 		Tags:      map[string]string{"host": "web-01"},
 	}
 
-	// 3. Process the data (Zero-allocation internally!)
-	result := engine.Process(dp)
+	// 3. Process the data (Zero-allocation internally & Context support!)
+	ctx := context.Background()
+	result, _ := engine.Process(ctx, dp)
 
 	if result.IsAnomaly {
 		fmt.Printf("[ALERT] Anomaly Detected! Score: %.2f\n", result.AnomalyMeta.Score)
@@ -174,6 +176,7 @@ graph TB
 
     subgraph App ["2. Application Layer Coordinator"]
         Engine["pipeline.Engine<br/><i>(engine.go)</i>"]
+        Processor["pipeline.StreamProcessor<br/><i>(processor.go)</i>"]
     end
 
     subgraph Core ["3. Core Domain (Zero Dependencies)"]
@@ -199,7 +202,8 @@ graph TB
         Bbolt["bbolt.Store (Driver)"]
     end
 
-    Ingestion --> Engine
+    Ingestion --> Processor
+    Processor --> Engine
     Engine --> Core
     Engine --> Ports
 
@@ -210,7 +214,7 @@ graph TB
     Qdrant -. Implements .-> StorePort
     Bbolt -. Implements .-> StorePort
 
-    class Engine header;
+    class Engine,Processor header;
     class DetectorPort,StorePort port;
     class DataPoint,RingBuffer,Stats,Decomp domain;
     class Prometheus,CSV,Webhooks,ZScore,EWMA,MAD,Qdrant,Bbolt adapter;
@@ -239,7 +243,8 @@ Concrete drivers implementing the Ports:
   - `bbolt.Store` ([`vector/driver/bbolt/store.go`](./vector/driver/bbolt/store.go))
 
 ### 4. Application Layer (Pipeline Coordinator)
-- **`pipeline.Engine`** ([`pipeline/engine.go`](./pipeline/engine.go)): Combines the `RingBufferWindow`, an `anomaly.Detector` Port, and a `vector.Store` Port into a unified execution flow `Engine.Process(dp)`.
+- **`pipeline.Engine`** ([`pipeline/engine.go`](./pipeline/engine.go)): Combines the `RingBufferWindow`, an `anomaly.Detector` Port, and a `vector.Store` Port into a unified execution flow `Engine.Process(ctx, dp)`.
+- **`pipeline.StreamProcessor`** ([`pipeline/processor.go`](./pipeline/processor.go)): Manages concurrent worker pools reading from Go channels with graceful shutdown (`sync.WaitGroup`) and context cancellation (`ctx.Done()`).
 
 ---
 

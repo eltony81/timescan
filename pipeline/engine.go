@@ -1,6 +1,8 @@
 package pipeline
 
 import (
+	"context"
+
 	"github.com/timescan/timescan/anomaly"
 	"github.com/timescan/timescan/timeseries"
 	"github.com/timescan/timescan/vector"
@@ -32,21 +34,24 @@ type Result struct {
 	WindowContext anomaly.WindowContext
 }
 
-// Process evaluates a single DataPoint through the pipeline and returns the Result.
-func (e *Engine) Process(dp timeseries.DataPoint) Result {
-	// Snapshot the historical window context BEFORE pushing the new point
+// Process evaluates a single DataPoint through the pipeline with context support.
+// Returns ctx.Err() if the context was cancelled before evaluation.
+func (e *Engine) Process(ctx context.Context, dp timeseries.DataPoint) (Result, error) {
+	select {
+	case <-ctx.Done():
+		return Result{}, ctx.Err()
+	default:
+	}
+
 	snap := e.window.Snapshot(nil)
-	ctx := anomaly.WindowContext{Window: snap}
+	wCtx := anomaly.WindowContext{Window: snap}
 
-	// Evaluate the new incoming point against the historical context
-	isAnomaly, meta := e.config.Detector.IsAnomaly(dp, ctx)
-
-	// Now push the new point into the ring buffer window
+	isAnomaly, meta := e.config.Detector.IsAnomaly(dp, wCtx)
 	e.window.Push(dp)
 
 	return Result{
 		IsAnomaly:     isAnomaly,
 		AnomalyMeta:   meta,
-		WindowContext: ctx,
-	}
+		WindowContext: wCtx,
+	}, nil
 }

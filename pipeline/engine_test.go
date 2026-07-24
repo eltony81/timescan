@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"context"
 	"sync"
 	"testing"
 
@@ -15,11 +16,12 @@ func TestPipelineEngine(t *testing.T) {
 	})
 
 	var wg sync.WaitGroup
+	ctx := context.Background()
 	for i := 0; i < 50; i++ {
 		wg.Add(1)
 		go func(val float64) {
 			defer wg.Done()
-			_ = engine.Process(timeseries.DataPoint{Value: val})
+			_, _ = engine.Process(ctx, timeseries.DataPoint{Value: val})
 		}(float64(i))
 	}
 	wg.Wait()

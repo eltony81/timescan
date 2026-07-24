@@ -20,13 +20,7 @@ func main() {
 	fmt.Println("   TIMESCAN MASTER TUTORIAL - FULL FEATURE DEMO   ")
 	fmt.Println("==================================================")
 
-	// ----------------------------------------------------
-	// STEP 1: Setting up Vector Database Storage Adapter
-	// ----------------------------------------------------
-	// You can choose between Tier 1 (Embedded) or Tier 2 (Enterprise DB).
-	// Thanks to the vector.Store interface, the rest of the code is 100% identical!
-
-	useTier1Embedded := true // Toggle between Bbolt (Tier 1) and Qdrant (Tier 2)
+	useTier1Embedded := true
 
 	var vecStore vector.Store
 	var err error
@@ -48,9 +42,6 @@ func main() {
 		panic(err)
 	}
 
-	// ----------------------------------------------------
-	// STEP 2: Creating Anomaly Detectors & Pipeline Engine
-	// ----------------------------------------------------
 	fmt.Println("[Step 2] Configuring Pipeline Engine with EWMA Detector...")
 	detector := anomaly.NewEWMA(anomaly.EWMAConfig{
 		Alpha:     0.15,
@@ -58,25 +49,21 @@ func main() {
 	})
 
 	engine := pipeline.NewEngine(pipeline.Config{
-		WindowSize:  60, // 60-point rolling window
+		WindowSize:  60,
 		Detector:    detector,
 		VectorStore: vecStore,
 	})
 
-	// ----------------------------------------------------
-	// STEP 3: Streaming Ingestion & Real-Time Detection
-	// ----------------------------------------------------
 	fmt.Println("[Step 3] Simulating real-time metric ingestion with an anomaly...")
 	now := time.Now()
 	var historicalSeries timeseries.Series
+	ctx := context.Background()
 
 	for i := 0; i < 60; i++ {
-		// Generate base signal with slight noise + 7-period seasonality
 		val := 100.0 + math.Sin(float64(i)*0.5)*15.0
 
-		// Inject an anomaly spike at step 45
 		if i == 45 {
-			val = 350.0 // Sudden spike!
+			val = 350.0
 		}
 
 		dp := timeseries.DataPoint{
@@ -87,8 +74,7 @@ func main() {
 
 		historicalSeries.Points = append(historicalSeries.Points, dp)
 
-		// Evaluate in the hot-path (Zero-allocation internally)
-		result := engine.Process(dp)
+		result, _ := engine.Process(ctx, dp)
 
 		if result.IsAnomaly {
 			fmt.Printf("\n[ALERT AT STEP %d] Anomaly Detected!\n", i)
@@ -98,29 +84,21 @@ func main() {
 			fmt.Printf("   └─ Anomaly Score:  %.2f (Threshold: %.2f)\n",
 				result.AnomalyMeta.Score, result.AnomalyMeta.Threshold)
 
-			// ----------------------------------------------------
-			// STEP 4: Vector Embedding & Similarity Pattern Match
-			// ----------------------------------------------------
 			fmt.Println("\n   [Step 4] Encoding Window Shape into Vector (PAA)...")
 			dimensions := 8
 			vectorEmbedding := vector.PAAEncode(result.WindowContext, dimensions)
 			fmt.Printf("   ├─ Compressed 60-point window to %d dims: %v\n", dimensions, vectorEmbedding)
 
-			// Upsert pattern to vector store (works for Bbolt and Qdrant alike!)
 			incidentID := fmt.Sprintf("incident-%d", dp.Timestamp.Unix())
 			_ = vecStore.Upsert(context.Background(), incidentID, vectorEmbedding, map[string]any{
 				"host": dp.Tags["host"],
 			})
 
-			// Search for historical matches
 			matches, _ := vecStore.SearchNearest(context.Background(), vectorEmbedding, 3, nil)
 			fmt.Printf("   └─ Found %d similar past incidents in Vector Store.\n", len(matches))
 		}
 	}
 
-	// ----------------------------------------------------
-	// STEP 5: Offline Time-Series Seasonality Decomposition
-	// ----------------------------------------------------
 	fmt.Println("\n[Step 5] Running Offline Additive Decomposition on full series...")
 	period := 7
 	decomp := decomposition.DecomposeAdditive(historicalSeries, period)
@@ -136,9 +114,6 @@ func main() {
 	fmt.Printf("   ├─ Seasonal Effect:  %.2f\n", p45Seasonal)
 	fmt.Printf("   └─ Residual Noise:   %.2f\n", p45Residual)
 
-	// ----------------------------------------------------
-	// STEP 6: Online Stats & Memory Recycling Summary
-	// ----------------------------------------------------
 	fmt.Println("\n[Step 6] Online Stats Summary (Welford & MAD)...")
 	welford := timeseries.NewWelford()
 	vals := make([]float64, len(historicalSeries.Points))

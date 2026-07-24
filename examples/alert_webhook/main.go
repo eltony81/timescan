@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/timescan/timescan/timeseries"
 )
 
-// AlertDispatcher handles debouncing of alerts to avoid spamming webhooks.
 type AlertDispatcher struct {
 	lastAlertTime time.Time
 	cooldown      time.Duration
@@ -22,7 +22,6 @@ func (a *AlertDispatcher) Dispatch(dp timeseries.DataPoint, meta anomaly.Anomaly
 	}
 
 	a.lastAlertTime = time.Now()
-	// Simulate sending an HTTP POST request to Slack/Discord/Alertmanager
 	fmt.Printf("[WEBHOOK] POST /alerts -> 'CRITICAL: CPU Spike! Value: %.2f (Score: %.2f)'\n",
 		dp.Value, meta.Score)
 }
@@ -34,18 +33,18 @@ func main() {
 	})
 
 	dispatcher := &AlertDispatcher{
-		cooldown: 5 * time.Second, // Only send 1 alert every 5 seconds maximum
+		cooldown: 5 * time.Second,
 	}
 
 	fmt.Println("--- Alert Webhook Dispatcher with Debouncing ---")
 
-	// Simulate a prolonged incident (5 consecutive anomalous readings)
+	ctx := context.Background()
 	for i := 0; i < 15; i++ {
 		val := 10.0
 		if i >= 5 && i <= 10 {
-			val = 100.0 // Prolonged spike!
+			val = 100.0
 		} else {
-			val = 10.0 + float64(i%2) // normal noise
+			val = 10.0 + float64(i%2)
 		}
 
 		dp := timeseries.DataPoint{
@@ -53,13 +52,13 @@ func main() {
 			Value:     val,
 		}
 
-		res := engine.Process(dp)
+		res, _ := engine.Process(ctx, dp)
 		if res.IsAnomaly {
 			dispatcher.Dispatch(dp, res.AnomalyMeta)
 		} else {
 			fmt.Printf("[OK] Value: %.2f\n", val)
 		}
 
-		time.Sleep(1 * time.Second) // 1 second real-time delay to test debouncer
+		time.Sleep(1 * time.Second)
 	}
 }
