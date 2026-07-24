@@ -10,6 +10,7 @@ Benvenuto nel tutorial ufficiale di **Timescan**! Questa guida ti accompagnerà 
 6. **Integrazione con Vector Database** (`Bbolt` / `Qdrant`).
 7. **Decomposizione della Stagionalità** (`Trend`, `Seasonal`, `Residual`).
 8. **Statistiche in Real-Time ed Offline** (Algoritmo di Welford, Mediana, IQR).
+9. **Invio di Alert Webhook** con Throttling e Debouncing anti-spam.
 
 ---
 
@@ -86,12 +87,13 @@ engine := pipeline.NewEngine(pipeline.Config{
 
 ---
 
-## Passo 4: Processare il Flusso in Real-Time (Zero-Alloc)
+## Passo 4: Processare il Flusso in Real-Time (Zero-Alloc & Context Support)
 
-Ad ogni dato in arrivo chiamiamo `engine.Process(dp)`. Se viene trovata un'anomalia, l'engine restituisce i dettagli nel `Result`:
+Ad ogni dato in arrivo chiamiamo `engine.Process(ctx, dp)`. Se viene trovata un'anomalia, l'engine restituisce i dettagli nel `Result`:
 
 ```go
-result := engine.Process(dp)
+ctx := context.Background()
+result, err := engine.Process(ctx, dp)
 
 if result.IsAnomaly {
     fmt.Printf("[ALERT] Anomalia Rilevata! Valore: %.2f (Atteso: %.2f, Score: %.2f)\n",
@@ -101,7 +103,42 @@ if result.IsAnomaly {
 
 ---
 
-## Passo 5: Convertire la Forma in Vettore (`PAAEncode`) e Cercare Similitudini
+## Passo 5: Invio di Notifiche Webhook (Alert Egress & Debouncing)
+
+Quando `result.IsAnomaly` è `true`, è possibile inoltrare una notifica HTTP POST a un servizio di Webhook (es. Slack, Discord, PagerDuty o Alertmanager). Per evitare lo spam di notifiche in caso di picchi prolungati, è buona norma implementare un meccanismo di **Debouncing / Throttling**:
+
+```go
+type AlertDispatcher struct {
+    WebhookURL    string
+    LastAlertTime time.Time
+    Cooldown      time.Duration
+}
+
+func (a *AlertDispatcher) Dispatch(dp timeseries.DataPoint, meta anomaly.AnomalyMeta) {
+    // 1. Throttling anti-spam
+    if time.Since(a.LastAlertTime) < a.Cooldown {
+        fmt.Printf("[Throttled] Anomalia soppressa per cooldown (Valore: %.2f)\n", dp.Value)
+        return
+    }
+
+    a.LastAlertTime = time.Now()
+
+    // 2. Invio del payload JSON via HTTP POST
+    payload := map[string]any{
+        "event":          "ANOMALY_DETECTED",
+        "timestamp":      dp.Timestamp,
+        "value":          dp.Value,
+        "expected_value": meta.Expected,
+        "anomaly_score":  meta.Score,
+    }
+    data, _ := json.Marshal(payload)
+    _, _ = http.Post(a.WebhookURL, "application/json", bytes.NewBuffer(data))
+}
+```
+
+---
+
+## Passo 6: Convertire la Forma in Vettore (`PAAEncode`) e Cercare Similitudini
 
 Quando viene rilevata un'anomalia, prendiamo la finestra di 60 punti temporali dal `result.WindowContext` e la comprimiamo in un vettore a 8 dimensioni tramite l'algoritmo **PAA** (Piecewise Aggregate Approximation):
 
@@ -123,7 +160,7 @@ matches, _ := vecStore.SearchNearest(context.Background(), vectorEmbedding, 3, n
 
 ---
 
-## Passo 6: Decomposizione della Stagionalità (Offline)
+## Passo 7: Decomposizione della Stagionalità (Offline)
 
 Per analizzare una serie temporale complessa ed estrarre la stagionalità (es. cicli di traffico giornalieri/settimanali):
 
@@ -140,7 +177,7 @@ fmt.Printf("Rumore Residuo: %.2f\n", decomp.Residual.Points[15].Value)
 
 ---
 
-## Passo 7: Calcolo Statistiche Online ed Offline
+## Passo 8: Calcolo Statistiche Online ed Offline
 
 Timescan include strumenti per il calcolo di statistiche senza impattare la memoria:
 
