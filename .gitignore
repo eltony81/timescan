@@ -1,0 +1,26 @@
+# Binaries for SDKs and apps
+*.exe
+*.exe;
+*.dll
+*.so
+*.dylib
+
+# Test binaries and coverage
+*.test
+*.out
+coverage.out
+dataset.csv
+
+# Output of the go build command
+/bin/
+/dist/
+
+# IDE & OS specific files
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.swo
+
+# Go workspace file
+go.work

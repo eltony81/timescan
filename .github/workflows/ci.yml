@@ -1,0 +1,64 @@
+name: CI & Quality Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go-version: ['1.21', '1.22']
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+
+      - name: Download Dependencies
+        run: go mod download
+
+      - name: Verify Code Formatting
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "The following files are not formatted properly:"
+            gofmt -l .
+            exit 1
+          fi
+
+      - name: Run Go Vet
+        run: go vet ./...
+
+      - name: Run Unit Tests with Race Detector
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Verify Examples Build & Execute
+        run: |
+          go run examples/anomaly_detection/main.go
+          go run examples/ewma_mad_detectors/main.go
+          go run examples/seasonal_anomaly_detection/main.go
+          go run examples/concurrent_workers/main.go
+          go run examples/vector_matching/main.go
+          go run examples/csv_ingestion/main.go
+          go run examples/seasonality_decomposition/main.go
+          go run examples/basic_statistics/main.go
+          go run examples/full_tutorial/main.go
+
+      - name: Run Fuzz Testing Sanity Checks
+        run: |
+          go test -fuzz=FuzzRingBuffer -fuzztime=2s ./timeseries
+          go test -fuzz=FuzzWelford -fuzztime=2s ./timeseries
+          go test -fuzz=FuzzMedian -fuzztime=2s ./timeseries
+          go test -fuzz=FuzzDetectors -fuzztime=2s ./anomaly
+          go test -fuzz=FuzzDecomposeAdditive -fuzztime=2s ./decomposition
+          go test -fuzz=FuzzPAAEncode -fuzztime=2s ./vector
