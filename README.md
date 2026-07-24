@@ -159,43 +159,49 @@ func main() {
 `timescan` strictly adheres to **Ports and Adapters (Hexagonal Architecture)**. The core mathematical domain logic is completely isolated from external databases, I/O protocols, or framework dependencies.
 
 ```mermaid
-graph TD
-    subgraph Ingestion_Egress ["Ingestion & Egress Adapters"]
-        Prometheus["Prometheus / OTLP Stream"]
-        CSV["CSV Ingestion"]
-        Webhooks["Alert Webhooks / Alertmanager"]
+graph TB
+    %% Custom Styling for High Contrast and Larger Readability
+    classDef header font-size:16px,font-weight:bold,fill:#1e88e5,color:#ffffff,stroke:#1565c0,stroke-width:2px;
+    classDef port font-size:15px,font-weight:bold,fill:#e1f5fe,color:#01579b,stroke:#0288d1,stroke-width:2px;
+    classDef domain font-size:14px,fill:#f3e5f5,color:#4a148c,stroke:#ab47bc,stroke-width:2px;
+    classDef adapter font-size:14px,fill:#fff3e0,color:#e65100,stroke:#fb8c00,stroke-width:1.5px;
+
+    subgraph Ingestion ["1. Ingestion & Egress Adapters"]
+        Prometheus["Prometheus / OTLP"]
+        CSV["CSV File Ingestion"]
+        Webhooks["Alert Webhooks"]
     end
 
-    subgraph App_Layer ["Application Layer"]
-        Engine["pipeline.Engine (engine.go)"]
+    subgraph App ["2. Application Layer Coordinator"]
+        Engine["pipeline.Engine<br/><i>(engine.go)</i>"]
     end
 
-    subgraph Ports ["Hexagonal Ports (Interfaces)"]
-        DetectorPort["anomaly.Detector (detector.go)"]
-        StorePort["vector.Store (store.go)"]
+    subgraph Core ["3. Core Domain (Zero Dependencies)"]
+        DataPoint["DataPoint & Series<br/><i>(datapoint.go)</i>"]
+        RingBuffer["RingBufferWindow<br/><i>(ring_buffer.go)</i>"]
+        Stats["Welford, Median, MAD, IQR<br/><i>(stats.go)</i>"]
+        Decomp["DecomposeAdditive<br/><i>(classical.go)</i>"]
     end
 
-    subgraph Core_Domain ["Core Domain (Zero Dependencies)"]
-        DataPoint["timeseries.DataPoint & Series (datapoint.go)"]
-        RingBuffer["timeseries.RingBufferWindow (ring_buffer.go)"]
-        Stats["timeseries.Welford, Median, MAD, IQR (stats.go)"]
-        Decomp["decomposition.DecomposeAdditive (classical.go)"]
+    subgraph Ports ["4. Hexagonal Ports (Domain Interfaces)"]
+        DetectorPort["anomaly.Detector<br/><i>(detector.go)</i>"]
+        StorePort["vector.Store<br/><i>(store.go)</i>"]
     end
 
-    subgraph Detector_Adapters ["Anomaly Detector Implementations"]
-        ZScore["anomaly.ZScoreDetector (zscore.go)"]
-        EWMA["anomaly.EWMADetector (ewma.go)"]
-        MAD["anomaly.MADDetector (mad.go)"]
+    subgraph Detectors ["5. Anomaly Detector Implementations"]
+        ZScore["anomaly.ZScoreDetector"]
+        EWMA["anomaly.EWMADetector"]
+        MAD["anomaly.MADDetector"]
     end
 
-    subgraph Store_Adapters ["Vector Store Implementations"]
-        Qdrant["qdrant.Store (vector/driver/qdrant/store.go)"]
-        Bbolt["bbolt.Store (vector/driver/bbolt/store.go)"]
+    subgraph Stores ["6. Vector Store Implementations"]
+        Qdrant["qdrant.Store (Driver)"]
+        Bbolt["bbolt.Store (Driver)"]
     end
 
-    Ingestion_Egress --> Engine
+    Ingestion --> Engine
+    Engine --> Core
     Engine --> Ports
-    Engine --> Core_Domain
 
     ZScore -. Implements .-> DetectorPort
     EWMA -. Implements .-> DetectorPort
@@ -204,8 +210,10 @@ graph TD
     Qdrant -. Implements .-> StorePort
     Bbolt -. Implements .-> StorePort
 
-    Core_Domain --> DetectorPort
-    Core_Domain --> StorePort
+    class Engine header;
+    class DetectorPort,StorePort port;
+    class DataPoint,RingBuffer,Stats,Decomp domain;
+    class Prometheus,CSV,Webhooks,ZScore,EWMA,MAD,Qdrant,Bbolt adapter;
 ```
 
 ### 1. Core Domain (The Center)
