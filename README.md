@@ -170,7 +170,7 @@ graph TD
         Engine["pipeline.Engine (engine.go)"]
     end
 
-    subgraph Ports ["Ports (Interfaces)"]
+    subgraph Ports ["Hexagonal Ports (Interfaces)"]
         DetectorPort["anomaly.Detector (detector.go)"]
         StorePort["vector.Store (store.go)"]
     end
@@ -182,10 +182,13 @@ graph TD
         Decomp["decomposition.DecomposeAdditive (classical.go)"]
     end
 
-    subgraph Concrete_Adapters ["Driver Adapters (Implementations)"]
+    subgraph Detector_Adapters ["Anomaly Detector Implementations"]
         ZScore["anomaly.ZScoreDetector (zscore.go)"]
         EWMA["anomaly.EWMADetector (ewma.go)"]
         MAD["anomaly.MADDetector (mad.go)"]
+    end
+
+    subgraph Store_Adapters ["Vector Store Implementations"]
         Qdrant["qdrant.Store (vector/driver/qdrant/store.go)"]
         Bbolt["bbolt.Store (vector/driver/bbolt/store.go)"]
     end
@@ -193,7 +196,14 @@ graph TD
     Ingestion_Egress --> Engine
     Engine --> Ports
     Engine --> Core_Domain
-    Concrete_Adapters -. Implements .-> Ports
+
+    ZScore -. Implements .-> DetectorPort
+    EWMA -. Implements .-> DetectorPort
+    MAD -. Implements .-> DetectorPort
+
+    Qdrant -. Implements .-> StorePort
+    Bbolt -. Implements .-> StorePort
+
     Core_Domain --> DetectorPort
     Core_Domain --> StorePort
 ```
@@ -212,11 +222,11 @@ Decoupled interfaces defining how the core domain communicates:
 
 ### 3. Adapters (Concrete Implementations)
 Concrete drivers implementing the Ports:
-- **Anomaly Detection Adapters**:
+- **Anomaly Detection Adapters (implementing `anomaly.Detector`)**:
   - `anomaly.ZScoreDetector` ([`anomaly/zscore.go`](./anomaly/zscore.go))
   - `anomaly.EWMADetector` ([`anomaly/ewma.go`](./anomaly/ewma.go))
   - `anomaly.MADDetector` ([`anomaly/mad.go`](./anomaly/mad.go))
-- **Vector Storage Driver Adapters**:
+- **Vector Storage Driver Adapters (implementing `vector.Store`)**:
   - `qdrant.Store` ([`vector/driver/qdrant/store.go`](./vector/driver/qdrant/store.go))
   - `bbolt.Store` ([`vector/driver/bbolt/store.go`](./vector/driver/bbolt/store.go))
 
