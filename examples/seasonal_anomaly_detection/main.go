@@ -59,7 +59,7 @@ func main() {
 				originalVal = p.Value
 			}
 		}
-		fmt.Printf("🚨 Anomaly triggered on Day %d! Original Value: %.2f (Residual score: %.2f)\n",
+		fmt.Printf("[ALERT] Anomaly triggered on Day %d! Original Value: %.2f (Residual score: %.2f)\n",
 			dayIndex, originalVal, a.Meta.Score)
 	}
 }

@@ -23,7 +23,7 @@ func (a *AlertDispatcher) Dispatch(dp timeseries.DataPoint, meta anomaly.Anomaly
 
 	a.lastAlertTime = time.Now()
 	// Simulate sending an HTTP POST request to Slack/Discord/Alertmanager
-	fmt.Printf("[WEBHOOK] 🌐 POST /alerts -> 'CRITICAL: CPU Spike! Value: %.2f (Score: %.2f)'\n",
+	fmt.Printf("[WEBHOOK] POST /alerts -> 'CRITICAL: CPU Spike! Value: %.2f (Score: %.2f)'\n",
 		dp.Value, meta.Score)
 }
 

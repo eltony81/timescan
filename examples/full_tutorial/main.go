@@ -74,7 +74,7 @@ func main() {
 		result := engine.Process(dp)
 
 		if result.IsAnomaly {
-			fmt.Printf("\n🚨 [ALERT AT STEP %d] Anomaly Detected!\n", i)
+			fmt.Printf("\n[ALERT AT STEP %d] Anomaly Detected!\n", i)
 			fmt.Printf("   ├─ Timestamp:      %s\n", dp.Timestamp.Format("15:04:05"))
 			fmt.Printf("   ├─ Observed Value: %.2f\n", dp.Value)
 			fmt.Printf("   ├─ Expected Value: %.2f\n", result.AnomalyMeta.Expected)
@@ -137,6 +137,6 @@ func main() {
 	fmt.Printf("   └─ Offline MAD:            %.2f\n", timeseries.MAD(vals))
 
 	fmt.Println("\n==================================================")
-	fmt.Println("     TUTORIAL COMPLETED SUCCESSFULLY! 🎉          ")
+	fmt.Println("     TUTORIAL COMPLETED SUCCESSFULLY!             ")
 	fmt.Println("==================================================")
 }

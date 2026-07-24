@@ -1,10 +1,10 @@
-# Timescan 📊
+# Timescan
 
 > A Go-Native Time-Series Analytics, Anomaly Detection & Vector Pattern Engine
 
 ---
 
-## 🤔 What Problem Does Timescan Solve?
+## What Problem Does Timescan Solve?
 
 Imagine you are running a server, a website, or a cloud application. Every second, your system produces a stream of numbers—such as CPU usage, user traffic, or memory consumption. These numbers changing over time are called **Time-Series Data**.
 
@@ -15,7 +15,7 @@ Imagine you are running a server, a website, or a cloud application. Every secon
 
 ---
 
-## 💡 The Solution: How Timescan Helps
+## The Solution: How Timescan Helps
 
 `timescan` is a lightweight, pure-Go library that you can drop directly into your Go project **with zero external setup**. It acts like an intelligent guardian for your data:
 
@@ -25,7 +25,7 @@ Imagine you are running a server, a website, or a cloud application. Every secon
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 - **Zero-Allocation Hot Paths**: Built around a thread-safe `RingBufferWindow` and `sync.Pool` object recycling. Memory allocations won't spike your GC during massive ingestions.
 - **Robust Anomaly Detectors**: Choose from Z-Score, EWMA (Exponentially Weighted Moving Average), and MAD (Median Absolute Deviation).
@@ -35,7 +35,7 @@ Imagine you are running a server, a website, or a cloud application. Every secon
 
 ---
 
-## 📦 Installation
+## Installation
 
 ```bash
 go get github.com/timescan/timescan
@@ -43,7 +43,7 @@ go get github.com/timescan/timescan
 
 ---
 
-## 📚 Quickstart & Tutorials
+## Quickstart & Tutorials
 
 We've prepared several runnable examples in the [`examples/`](./examples) directory. You can run any of them directly from the terminal!
 
@@ -85,7 +85,7 @@ go run examples/csv_ingestion/main.go
 
 ---
 
-## 💡 Simple Usage Example
+## Simple Usage Example
 
 Here's how easy it is to embed `timescan` into your own Go code:
 
@@ -120,14 +120,14 @@ func main() {
 	result := engine.Process(dp)
 
 	if result.IsAnomaly {
-		fmt.Printf("🚨 Anomaly Detected! Score: %.2f\n", result.AnomalyMeta.Score)
+		fmt.Printf("[ALERT] Anomaly Detected! Score: %.2f\n", result.AnomalyMeta.Score)
 	}
 }
 ```
 
 ---
 
-## 🗄 Supported Vector Databases
+## Supported Vector Databases
 
 `timescan` provides a unified `vector.Store` interface (`Upsert`, `SearchNearest`) supporting two distinct tiers of vector storage:
 
@@ -140,7 +140,7 @@ func main() {
 - **Milvus**: Large-scale distributed vector storage for massive enterprise observability clusters.
 - **Pgvector (PostgreSQL)**: Native integration for setups already leveraging PostgreSQL databases.
 
-### ❓ Key Differences Between Tier 1 and Tier 2
+### Key Differences Between Tier 1 and Tier 2
 
 | Feature | Tier 1 (Embedded / Native Go) | Tier 2 (Enterprise / External DB) |
 |---|---|---|
@@ -150,11 +150,11 @@ func main() {
 | **Scalability** | Single-node / Edge scale (persisted in local file like `data.db`). | Horizontal scale (sharding across multiple cloud RAM nodes). |
 | **Best Used For** | Edge devices, single-binary tools, local dev, IoT agents. | Cloud clusters, enterprise multi-tenancy, shared metrics. |
 
-> 💡 **Unified Code Base**: Thanks to the `vector.Store` interface, your Go application code remains **100% identical**! You can develop locally using **Bbolt (Tier 1)** with zero setup and switch to **Qdrant (Tier 2)** in production by simply changing your driver configuration line.
+> **Unified Code Base**: Thanks to the `vector.Store` interface, your Go application code remains **100% identical**! You can develop locally using **Bbolt (Tier 1)** with zero setup and switch to **Qdrant (Tier 2)** in production by simply changing your driver configuration line.
 
 ---
 
-## 🏗 Hexagonal Architecture Implementation
+## Hexagonal Architecture Implementation
 
 `timescan` strictly adheres to **Ports and Adapters (Hexagonal Architecture)**. The core mathematical domain logic is completely isolated from external databases, I/O protocols, or framework dependencies.
 
@@ -225,5 +225,5 @@ Concrete drivers implementing the Ports:
 
 ---
 
-## 📄 License
+## License
 MIT License

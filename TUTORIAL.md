@@ -1,6 +1,6 @@
-# 📘 Timescan: Tutorial Completo Passo-Passo
+# Timescan: Tutorial Completo Passo-Passo
 
-Benvenuto nel tutorial ufficiale di **Timescan**! Questa guida ti accompagnerà passo dopo passo nella costruzione di un'applicazione completa in Go che sfrutta **tutte le funzionalità** della libreria:
+Benvenuto nel tutorial ufficiale di **Timescan**! Questa guida ti accompagnerà passo dopo passo nella costruzione di un'applicazione completa in Go che sfrutta tutte le funzionalità della libreria:
 
 1. **Ingestione in Tempo Reale** con gestione della memoria Zero-Allocation.
 2. **Motore di Pipeline** e Coordinamento dei flussi.
@@ -12,7 +12,7 @@ Benvenuto nel tutorial ufficiale di **Timescan**! Questa guida ti accompagnerà 
 
 ---
 
-## 🛠️ Passo 1: Definire il Modello dei Dati
+## Passo 1: Definire il Modello dei Dati
 
 In Timescan ogni punto di misurazione è un `timeseries.DataPoint`:
 
@@ -28,7 +28,7 @@ dp := timeseries.DataPoint{
 
 ---
 
-## ⚙️ Passo 2: Inizializzare il Vector Store Adapter
+## Passo 2: Inizializzare il Vector Store Adapter
 
 Timescan permette di salvare le "forme" delle anomalie su un database vettoriale. Inizializziamo il driver per **Qdrant**:
 
@@ -43,7 +43,7 @@ vecStore, err := qdrant.NewStore(qdrant.Config{
 
 ---
 
-## 🧠 Passo 3: Configurare il Motore di Pipeline e Rilevamento
+## Passo 3: Configurare il Motore di Pipeline e Rilevamento
 
 Creiamo la `pipeline.Engine` che gestirà il buffer scorrevole (`RingBufferWindow`) e collegherà il rilevatore di anomalie (`EWMADetector`):
 
@@ -67,7 +67,7 @@ engine := pipeline.NewEngine(pipeline.Config{
 
 ---
 
-## 🔄 Passo 4: Processare il Flusso in Real-Time (Zero-Alloc)
+## Passo 4: Processare il Flusso in Real-Time (Zero-Alloc)
 
 Ad ogni dato in arrivo chiamiamo `engine.Process(dp)`. Se viene trovata un'anomalia, l'engine restituisce i dettagli nel `Result`:
 
@@ -75,14 +75,14 @@ Ad ogni dato in arrivo chiamiamo `engine.Process(dp)`. Se viene trovata un'anoma
 result := engine.Process(dp)
 
 if result.IsAnomaly {
-    fmt.Printf("🚨 Anomalia Rilevata! Valore: %.2f (Atteso: %.2f, Score: %.2f)\n",
+    fmt.Printf("[ALERT] Anomalia Rilevata! Valore: %.2f (Atteso: %.2f, Score: %.2f)\n",
         dp.Value, result.AnomalyMeta.Expected, result.AnomalyMeta.Score)
 }
 ```
 
 ---
 
-## 📐 Passo 5: Convertire la Forma in Vettore (`PAAEncode`) e Cercare Similitudini
+## Passo 5: Convertire la Forma in Vettore (`PAAEncode`) e Cercare Similitudini
 
 Quando viene rilevata un'anomalia, prendiamo la finestra di 60 punti temporali dal `result.WindowContext` e la comprimiamo in un vettore a 8 dimensioni tramite l'algoritmo **PAA** (Piecewise Aggregate Approximation):
 
@@ -104,7 +104,7 @@ matches, _ := vecStore.SearchNearest(context.Background(), vectorEmbedding, 3, n
 
 ---
 
-## 📊 Passo 6: Decomposizione della Stagionalità (Offline)
+## Passo 6: Decomposizione della Stagionalità (Offline)
 
 Per analizzare una serie temporale complessa ed estrarre la stagionalità (es. cicli di traffico giornalieri/settimanali):
 
@@ -121,7 +121,7 @@ fmt.Printf("Rumore Residuo: %.2f\n", decomp.Residual.Points[15].Value)
 
 ---
 
-## 📈 Passo 7: Calcolo Statistiche Online ed Offline
+## Passo 7: Calcolo Statistiche Online ed Offline
 
 Timescan include strumenti per il calcolo di statistiche senza impattare la memoria:
 
@@ -139,7 +139,7 @@ mad := timeseries.MAD(values)             // Deviazione Assoluta della Mediana
 
 ---
 
-## 🚀 Codice Completo ed Eseguibile
+## Codice Completo ed Eseguibile
 
 Tutti questi passaggi sono stati assemblati in un unico programma Go pronto per l'esecuzione. Puoi provarlo direttamente lanciando il seguente comando dal terminale:
 

@@ -61,7 +61,7 @@ func main() {
 		// 4. CHECK THE RESULT
 		if result.IsAnomaly {
 			// The engine successfully caught the sudden spike!
-			fmt.Printf("[ALERT] 🚨 Anomaly Detected at %s!\n", timeStr)
+			fmt.Printf("[ALERT] Anomaly Detected at %s!\n", timeStr)
 			fmt.Printf("        Value: %.2f (The system expected around ~%.2f)\n",
 				dp.Value, result.AnomalyMeta.Expected)
 		} else {
