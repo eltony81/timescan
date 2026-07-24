@@ -11,6 +11,7 @@ import (
 	"github.com/timescan/timescan/pipeline"
 	"github.com/timescan/timescan/timeseries"
 	"github.com/timescan/timescan/vector"
+	"github.com/timescan/timescan/vector/driver/bbolt"
 	"github.com/timescan/timescan/vector/driver/qdrant"
 )
 
@@ -22,11 +23,27 @@ func main() {
 	// ----------------------------------------------------
 	// STEP 1: Setting up Vector Database Storage Adapter
 	// ----------------------------------------------------
-	fmt.Println("\n[Step 1] Initializing Vector DB Driver (Qdrant)...")
-	vecStore, err := qdrant.NewStore(qdrant.Config{
-		Addr:       "localhost:6334",
-		Collection: "incident_patterns",
-	})
+	// You can choose between Tier 1 (Embedded) or Tier 2 (Enterprise DB).
+	// Thanks to the vector.Store interface, the rest of the code is 100% identical!
+
+	useTier1Embedded := true // Toggle between Bbolt (Tier 1) and Qdrant (Tier 2)
+
+	var vecStore vector.Store
+	var err error
+
+	if useTier1Embedded {
+		fmt.Println("\n[Step 1] Initializing Tier 1 Embedded Vector DB Driver (Bbolt)...")
+		vecStore, err = bbolt.NewStore(bbolt.Config{
+			Path: "patterns.db",
+		})
+	} else {
+		fmt.Println("\n[Step 1] Initializing Tier 2 Enterprise Vector DB Driver (Qdrant)...")
+		vecStore, err = qdrant.NewStore(qdrant.Config{
+			Addr:       "localhost:6334",
+			Collection: "incident_patterns",
+		})
+	}
+
 	if err != nil {
 		panic(err)
 	}
@@ -89,7 +106,7 @@ func main() {
 			vectorEmbedding := vector.PAAEncode(result.WindowContext, dimensions)
 			fmt.Printf("   ├─ Compressed 60-point window to %d dims: %v\n", dimensions, vectorEmbedding)
 
-			// Upsert pattern to vector store
+			// Upsert pattern to vector store (works for Bbolt and Qdrant alike!)
 			incidentID := fmt.Sprintf("incident-%d", dp.Timestamp.Unix())
 			_ = vecStore.Upsert(context.Background(), incidentID, vectorEmbedding, map[string]any{
 				"host": dp.Tags["host"],
@@ -97,7 +114,7 @@ func main() {
 
 			// Search for historical matches
 			matches, _ := vecStore.SearchNearest(context.Background(), vectorEmbedding, 3, nil)
-			fmt.Printf("   └─ Found %d similar past incidents in Qdrant.\n", len(matches))
+			fmt.Printf("   └─ Found %d similar past incidents in Vector Store.\n", len(matches))
 		}
 	}
 

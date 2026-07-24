@@ -3,12 +3,13 @@
 Benvenuto nel tutorial ufficiale di **Timescan**! Questa guida ti accompagnerà passo dopo passo nella costruzione di un'applicazione completa in Go che sfrutta tutte le funzionalità della libreria:
 
 1. **Ingestione in Tempo Reale** con gestione della memoria Zero-Allocation.
-2. **Motore di Pipeline** e Coordinamento dei flussi.
-3. **Rilevamento di Anomalie** tramite algoritmi avanzati (`EWMA`, `Z-Score`, `MAD`).
-4. **Compressione Vettoriale dei Pattern** (`PAAEncode`).
-5. **Integrazione con Vector Database** (`Qdrant` / `Bbolt`).
-6. **Decomposizione della Stagionalità** (`Trend`, `Seasonal`, `Residual`).
-7. **Statistiche in Real-Time ed Offline** (Algoritmo di Welford, Mediana, IQR).
+2. **Scelta dell'Infrastruttura Vettoriale** (Tier 1 Embedded o Tier 2 Enterprise).
+3. **Motore di Pipeline** e Coordinamento dei flussi.
+4. **Rilevamento di Anomalie** tramite algoritmi avanzati (`EWMA`, `Z-Score`, `MAD`).
+5. **Compressione Vettoriale dei Pattern** (`PAAEncode`).
+6. **Integrazione con Vector Database** (`Bbolt` / `Qdrant`).
+7. **Decomposizione della Stagionalità** (`Trend`, `Seasonal`, `Residual`).
+8. **Statistiche in Real-Time ed Offline** (Algoritmo di Welford, Mediana, IQR).
 
 ---
 
@@ -28,18 +29,36 @@ dp := timeseries.DataPoint{
 
 ---
 
-## Passo 2: Inizializzare il Vector Store Adapter
+## Passo 2: Inizializzare il Vector Store Adapter (Tier 1 o Tier 2)
 
-Timescan permette di salvare le "forme" delle anomalie su un database vettoriale. Inizializziamo il driver per **Qdrant**:
+Timescan permette di salvare le "forme" delle anomalie su un database vettoriale attraverso l'interfaccia unificata `vector.Store`. Puoi scegliere tra due opzioni:
+
+### Opzione A: Tier 1 (Embedded / Bbolt - Zero Infrastruttura Esterna)
+Ideale per sviluppo locale, dispositivi Edge o applicazioni a singolo binario. Salva i vettori in un file locale:
+
+```go
+import "github.com/timescan/timescan/vector/driver/bbolt"
+
+// Tier 1: Salva i vettori localmente nel file "patterns.db"
+vecStore, err := bbolt.NewStore(bbolt.Config{
+    Path: "patterns.db",
+})
+```
+
+### Opzione B: Tier 2 (Enterprise / Qdrant - Database Esterno)
+Ideale per cluster cloud, ambienti multi-tenant ed elevata scalabilità distribuita:
 
 ```go
 import "github.com/timescan/timescan/vector/driver/qdrant"
 
+// Tier 2: Connette l'applicazione a un server Qdrant tramite gRPC/HTTP
 vecStore, err := qdrant.NewStore(qdrant.Config{
     Addr:       "localhost:6334",
     Collection: "incident_patterns",
 })
 ```
+
+> **Nota**: Qualsiasi opzione tu scelga (`bbolt` o `qdrant`), il resto del tuo codice applicativo rimarrà **100% identico** grazie all'architettura ad interfacce esagonale!
 
 ---
 
@@ -93,7 +112,7 @@ import "github.com/timescan/timescan/vector"
 dimensions := 8
 vectorEmbedding := vector.PAAEncode(result.WindowContext, dimensions)
 
-// 1. Salva il pattern su Qdrant
+// 1. Salva il pattern sul Vector Store scelto (Bbolt o Qdrant)
 _ = vecStore.Upsert(context.Background(), "incident-101", vectorEmbedding, map[string]any{
     "host": dp.Tags["host"],
 })
