@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -10,41 +11,31 @@ import (
 )
 
 func main() {
-	// 1. CONFIGURE THE EWMA ENGINE
-	// EWMA (Exponentially Weighted Moving Average) is a detector that gives more
-	// importance (weight) to very recent data. It's great for tracking metrics
-	// that drift slowly over time but suddenly change abruptly.
 	engineEWMA := pipeline.NewEngine(pipeline.Config{
 		WindowSize: 50,
 		Detector: anomaly.NewEWMA(anomaly.EWMAConfig{
-			Alpha:     0.15, // Alpha controls how much we care about recent vs old data
-			Threshold: 3.0,  // Alert threshold
+			Alpha:     0.15,
+			Threshold: 3.0,
 		}),
 	})
 
-	// 2. CONFIGURE THE MAD ENGINE
-	// MAD (Median Absolute Deviation) is an incredibly robust detector.
-	// Unlike standard averages (which get confused by massive spikes),
-	// MAD relies on the "Median", making it practically immune to extreme outliers.
 	engineMAD := pipeline.NewEngine(pipeline.Config{
 		WindowSize: 50,
 		Detector: anomaly.NewMAD(anomaly.MADConfig{
-			Threshold: 3.5, // Alert threshold
+			Threshold: 3.5,
 		}),
 	})
 
 	fmt.Println("--- Advanced Detectors (EWMA & MAD) ---")
 
+	ctx := context.Background()
 	now := time.Now()
 	for i := 0; i < 30; i++ {
-		// Normal data fluctuating slightly so we have a non-zero variance
 		val := 10.0 + float64(i%3)
 
-		// Introduce a massive outlier on the 10th step
 		if i == 10 {
 			val = 1000.0
 		} else if i == 25 {
-			// Introduce a smaller anomaly on the 25th step
 			val = 40.0
 		}
 
@@ -53,10 +44,9 @@ func main() {
 			Value:     val,
 		}
 
-		resEWMA := engineEWMA.Process(dp)
-		resMAD := engineMAD.Process(dp)
+		resEWMA, _ := engineEWMA.Process(ctx, dp)
+		resMAD, _ := engineMAD.Process(ctx, dp)
 
-		// Print only when one of them detects an anomaly
 		if resEWMA.IsAnomaly || resMAD.IsAnomaly {
 			fmt.Printf("Step %d (Value: %.2f):\n", i, val)
 			if resEWMA.IsAnomaly {

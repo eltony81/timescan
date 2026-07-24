@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -22,7 +23,6 @@ func main() {
 	numServers := 5
 	numPointsPerServer := 20
 
-	// Create a worker pool pipeline for each server
 	engines := make(map[string]*pipeline.Engine)
 	for i := 1; i <= numServers; i++ {
 		serverID := fmt.Sprintf("server-%02d", i)
@@ -32,25 +32,22 @@ func main() {
 		})
 	}
 
-	// Channel to ingest metrics from all servers concurrently
 	metricsChan := make(chan MetricPayload, 100)
 	var wg sync.WaitGroup
+	ctx := context.Background()
 
-	// Start a central dispatcher to process incoming metrics
 	go func() {
 		for payload := range metricsChan {
-			// Route payload to the corresponding engine
 			engine := engines[payload.ServerID]
-			result := engine.Process(payload.Point)
+			result, err := engine.Process(ctx, payload.Point)
 
-			if result.IsAnomaly {
+			if err == nil && result.IsAnomaly {
 				fmt.Printf("[ALERT] %s reported anomaly! Value: %.2f\n",
 					payload.ServerID, payload.Point.Value)
 			}
 		}
 	}()
 
-	// Simulate N servers sending data concurrently
 	now := time.Now()
 	for i := 1; i <= numServers; i++ {
 		wg.Add(1)
@@ -61,7 +58,6 @@ func main() {
 			for j := 0; j < numPointsPerServer; j++ {
 				val := 50.0 + rand.Float64()*5.0
 
-				// Server 3 randomly crashes/spikes on step 10
 				if serverNum == 3 && j == 10 {
 					val = 99.0
 				}
@@ -73,14 +69,13 @@ func main() {
 						Value:     val,
 					},
 				}
-				time.Sleep(10 * time.Millisecond) // simulate network delay
+				time.Sleep(10 * time.Millisecond)
 			}
 		}(i)
 	}
 
 	wg.Wait()
 	close(metricsChan)
-	// Allow dispatcher to flush
 	time.Sleep(100 * time.Millisecond)
 	fmt.Println("All metrics processed successfully across all servers.")
 }
