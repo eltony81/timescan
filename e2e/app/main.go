@@ -98,7 +98,7 @@ func processCSVFile(ctx context.Context, filePath string, engine *pipeline.Engin
 
 func processPrometheusMetrics(ctx context.Context, prometheusURL string, engine *pipeline.Engine, webhookURL string) error {
 	fmt.Printf("\n--- Querying Prometheus Input Stream: %s ---\n", prometheusURL)
-	
+
 	// Query Prometheus self-metrics
 	queryURL := fmt.Sprintf("%s/api/v1/query?query=go_goroutines", prometheusURL)
 	resp, err := http.Get(queryURL)

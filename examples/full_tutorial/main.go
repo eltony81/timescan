@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
+	"net/http"
 	"time"
 
 	"github.com/timescan/timescan/anomaly"
@@ -14,6 +17,41 @@ import (
 	"github.com/timescan/timescan/vector/driver/bbolt"
 	"github.com/timescan/timescan/vector/driver/qdrant"
 )
+
+type AlertDispatcher struct {
+	WebhookURL    string
+	LastAlertTime time.Time
+	Cooldown      time.Duration
+}
+
+func (a *AlertDispatcher) Dispatch(dp timeseries.DataPoint, meta anomaly.AnomalyMeta) {
+	if time.Since(a.LastAlertTime) < a.Cooldown {
+		fmt.Printf("   ├─ [Throttled Webhook] Alert suppressed to prevent spam (Value: %.2f)\n", dp.Value)
+		return
+	}
+
+	a.LastAlertTime = time.Now()
+
+	payload := map[string]any{
+		"event":          "ANOMALY_DETECTED",
+		"timestamp":      dp.Timestamp,
+		"value":          dp.Value,
+		"expected_value": meta.Expected,
+		"anomaly_score":  meta.Score,
+	}
+	data, _ := json.Marshal(payload)
+	fmt.Printf("   ├─ [WEBHOOK DISPATCHED] POST %s -> Payload: %s\n", a.WebhookURL, string(data))
+
+	// Optional HTTP POST request (if server is running)
+	if a.WebhookURL != "" {
+		req, err := http.NewRequest(http.MethodPost, a.WebhookURL, bytes.NewBuffer(data))
+		if err == nil {
+			req.Header.Set("Content-Type", "application/json")
+			client := &http.Client{Timeout: 2 * time.Second}
+			_, _ = client.Do(req)
+		}
+	}
+}
 
 func main() {
 	fmt.Println("==================================================")
@@ -54,6 +92,11 @@ func main() {
 		VectorStore: vecStore,
 	})
 
+	dispatcher := &AlertDispatcher{
+		WebhookURL: "http://localhost:8080/alerts",
+		Cooldown:   5 * time.Second,
+	}
+
 	fmt.Println("[Step 3] Simulating real-time metric ingestion with an anomaly...")
 	now := time.Now()
 	var historicalSeries timeseries.Series
@@ -83,6 +126,9 @@ func main() {
 			fmt.Printf("   ├─ Expected Value: %.2f\n", result.AnomalyMeta.Expected)
 			fmt.Printf("   └─ Anomaly Score:  %.2f (Threshold: %.2f)\n",
 				result.AnomalyMeta.Score, result.AnomalyMeta.Threshold)
+
+			// Dispatch Webhook Alert
+			dispatcher.Dispatch(dp, result.AnomalyMeta)
 
 			fmt.Println("\n   [Step 4] Encoding Window Shape into Vector (PAA)...")
 			dimensions := 8
