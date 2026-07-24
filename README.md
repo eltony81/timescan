@@ -129,6 +129,27 @@ func main() {
 
 ---
 
+## End-to-End (E2E) Containerized Testing
+
+`timescan` includes a complete, containerized End-to-End test suite using **Podman Compose** (or Docker Compose). It tests real-time stream ingestion from both **Prometheus metrics** and **CSV datasets**, executing anomaly detection and dispatching **Alert Webhooks** to a mock receiver service.
+
+### E2E Architecture & Services
+- **Prometheus Service**: Scrapes live metrics on port `9090`.
+- **Webhook Receiver Service**: Listens on `:8080/alerts` to receive anomaly alert payloads.
+- **Timescan E2E Runner**: Ingests CSV & Prometheus metric streams and evaluates them using `timescan`.
+
+### Running E2E Tests with Podman Compose
+
+```bash
+# Build and launch all E2E services with Podman Compose
+podman-compose up --build
+
+# Stop and clean up containers
+podman-compose down
+```
+
+---
+
 ## Supported Vector Databases
 
 `timescan` provides a unified `vector.Store` interface (`Upsert`, `SearchNearest`) supporting two distinct tiers of vector storage:
