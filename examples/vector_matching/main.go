@@ -41,10 +41,10 @@ func main() {
 	}
 
 	// 3. COMPRESS THE DATA (PAA ENCODING)
-	// Databases cannot easily compare 60 raw data points. 
+	// Databases cannot easily compare 60 raw data points.
 	// Instead, we use an algorithm called PAA (Piecewise Aggregate Approximation)
 	// to neatly compress these 60 points into exactly 8 summary numbers (dimensions).
-	// Think of it like taking a high-resolution image and blurring it slightly 
+	// Think of it like taking a high-resolution image and blurring it slightly
 	// so the computer can analyze it much faster.
 	dimensions := 8
 	encodedVec := vector.PAAEncode(ctx, dimensions)

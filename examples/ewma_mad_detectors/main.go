@@ -12,7 +12,7 @@ import (
 func main() {
 	// 1. CONFIGURE THE EWMA ENGINE
 	// EWMA (Exponentially Weighted Moving Average) is a detector that gives more
-	// importance (weight) to very recent data. It's great for tracking metrics 
+	// importance (weight) to very recent data. It's great for tracking metrics
 	// that drift slowly over time but suddenly change abruptly.
 	engineEWMA := pipeline.NewEngine(pipeline.Config{
 		WindowSize: 50,
@@ -34,7 +34,7 @@ func main() {
 	})
 
 	fmt.Println("--- Advanced Detectors (EWMA & MAD) ---")
-	
+
 	now := time.Now()
 	for i := 0; i < 30; i++ {
 		// Normal data fluctuating slightly so we have a non-zero variance

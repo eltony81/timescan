@@ -18,10 +18,10 @@ type MetricPayload struct {
 
 func main() {
 	fmt.Println("--- High-Performance Concurrent Monitoring ---")
-	
+
 	numServers := 5
 	numPointsPerServer := 20
-	
+
 	// Create a worker pool pipeline for each server
 	engines := make(map[string]*pipeline.Engine)
 	for i := 1; i <= numServers; i++ {
@@ -42,9 +42,9 @@ func main() {
 			// Route payload to the corresponding engine
 			engine := engines[payload.ServerID]
 			result := engine.Process(payload.Point)
-			
+
 			if result.IsAnomaly {
-				fmt.Printf("[ALERT] %s reported anomaly! Value: %.2f\n", 
+				fmt.Printf("[ALERT] %s reported anomaly! Value: %.2f\n",
 					payload.ServerID, payload.Point.Value)
 			}
 		}
@@ -57,10 +57,10 @@ func main() {
 		go func(serverNum int) {
 			defer wg.Done()
 			serverID := fmt.Sprintf("server-%02d", serverNum)
-			
+
 			for j := 0; j < numPointsPerServer; j++ {
 				val := 50.0 + rand.Float64()*5.0
-				
+
 				// Server 3 randomly crashes/spikes on step 10
 				if serverNum == 3 && j == 10 {
 					val = 99.0

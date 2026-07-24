@@ -17,20 +17,20 @@ func main() {
 	// so it can understand what "normal" looks like.
 	engine := pipeline.NewEngine(pipeline.Config{
 		WindowSize: 50,
-		
+
 		// We use a Z-Score Detector. In simple terms, this calculates the average
-		// of the recent data in the window. If a new number is drastically different 
+		// of the recent data in the window. If a new number is drastically different
 		// from that average (specifically, 2 standard deviations away), it gets flagged!
 		Detector: anomaly.NewZScore(anomaly.ZScoreConfig{
-			Threshold: 2.0, 
+			Threshold: 2.0,
 		}),
-		
+
 		VectorStore: nil, // We don't need a database for this simple example.
 	})
 
 	fmt.Println("Starting Anomaly Detection Simulation...")
 	fmt.Println("----------------------------------------")
-	
+
 	// 2. SIMULATE INCOMING DATA
 	// Let's pretend we are receiving a new server reading (like temperature) every second.
 	now := time.Now()
@@ -39,7 +39,7 @@ func main() {
 		val := 100.0
 		if i == 15 {
 			// Suddenly, at the 15th second, the temperature spikes dangerously to 250!
-			val = 250.0 
+			val = 250.0
 		} else if i%2 == 0 {
 			val = 105.0 // Just normal random fluctuations
 		}
@@ -52,17 +52,17 @@ func main() {
 		}
 
 		// 3. PROCESS THE DATA
-		// We feed the reading into our engine. The engine instantly compares it to the 
+		// We feed the reading into our engine. The engine instantly compares it to the
 		// past history (the 50-point window) and tells us if this reading is dangerous.
 		result := engine.Process(dp)
 
 		timeStr := dp.Timestamp.Format("15:04:05")
-		
+
 		// 4. CHECK THE RESULT
 		if result.IsAnomaly {
 			// The engine successfully caught the sudden spike!
 			fmt.Printf("[ALERT] 🚨 Anomaly Detected at %s!\n", timeStr)
-			fmt.Printf("        Value: %.2f (The system expected around ~%.2f)\n", 
+			fmt.Printf("        Value: %.2f (The system expected around ~%.2f)\n",
 				dp.Value, result.AnomalyMeta.Expected)
 		} else {
 			// The data is normal, nothing to worry about.

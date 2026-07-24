@@ -7,7 +7,7 @@ import (
 
 func TestRingBufferWindow(t *testing.T) {
 	rb := NewRingBufferWindow(3)
-	
+
 	if rb.Count() != 0 {
 		t.Fatalf("expected 0, got %d", rb.Count())
 	}
@@ -19,7 +19,7 @@ func TestRingBufferWindow(t *testing.T) {
 
 	rb.Push(dp1)
 	rb.Push(dp2)
-	
+
 	snap := rb.Snapshot(nil)
 	if len(snap) != 2 {
 		t.Fatalf("expected 2, got %d", len(snap))
@@ -33,11 +33,11 @@ func TestRingBufferWindow(t *testing.T) {
 
 	snap2 := make([]DataPoint, 0, 10)
 	snap2 = rb.Snapshot(snap2)
-	
+
 	if len(snap2) != 3 {
 		t.Fatalf("expected 3, got %d", len(snap2))
 	}
-	
+
 	if snap2[0].Value != 2 || snap2[1].Value != 3 || snap2[2].Value != 4 {
 		t.Fatalf("unexpected snapshot after overflow: %v", snap2)
 	}

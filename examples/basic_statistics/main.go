@@ -14,14 +14,14 @@ func main() {
 	welford := timeseries.NewWelford()
 
 	fmt.Println("--- Online Statistics (Welford) ---")
-	
+
 	streamData := []float64{10, 12, 23, 23, 16, 23, 21, 16}
 	for _, val := range streamData {
 		welford.Update(val) // Update stats instantly with minimal memory
-		fmt.Printf("Added %.0f -> Current Mean: %.2f, StdDev: %.2f\n", 
+		fmt.Printf("Added %.0f -> Current Mean: %.2f, StdDev: %.2f\n",
 			val, welford.Mean(), welford.StdDev())
 	}
-	
+
 	fmt.Printf("Total items processed: %d\n\n", welford.Count())
 
 	// 2. OFFLINE ROBUST STATISTICS

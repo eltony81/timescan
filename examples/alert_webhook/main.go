@@ -23,7 +23,7 @@ func (a *AlertDispatcher) Dispatch(dp timeseries.DataPoint, meta anomaly.Anomaly
 
 	a.lastAlertTime = time.Now()
 	// Simulate sending an HTTP POST request to Slack/Discord/Alertmanager
-	fmt.Printf("[WEBHOOK] 🌐 POST /alerts -> 'CRITICAL: CPU Spike! Value: %.2f (Score: %.2f)'\n", 
+	fmt.Printf("[WEBHOOK] 🌐 POST /alerts -> 'CRITICAL: CPU Spike! Value: %.2f (Score: %.2f)'\n",
 		dp.Value, meta.Score)
 }
 
@@ -38,7 +38,7 @@ func main() {
 	}
 
 	fmt.Println("--- Alert Webhook Dispatcher with Debouncing ---")
-	
+
 	// Simulate a prolonged incident (5 consecutive anomalous readings)
 	for i := 0; i < 15; i++ {
 		val := 10.0
@@ -59,7 +59,7 @@ func main() {
 		} else {
 			fmt.Printf("[OK] Value: %.2f\n", val)
 		}
-		
+
 		time.Sleep(1 * time.Second) // 1 second real-time delay to test debouncer
 	}
 }

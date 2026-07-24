@@ -22,7 +22,7 @@ func generateDummyCSV(filename string) error {
 	defer writer.Flush()
 
 	writer.Write([]string{"timestamp", "metric_value"})
-	
+
 	now := time.Now()
 	for i := 0; i < 100; i++ {
 		val := 50.0 + float64(i%5)
@@ -41,7 +41,7 @@ func main() {
 	defer os.Remove(filename) // clean up after test
 
 	fmt.Println("--- CSV Ingestion & Backtesting ---")
-	
+
 	file, err := os.Open(filename)
 	if err != nil {
 		panic(err)
@@ -58,22 +58,22 @@ func main() {
 		if err != nil {
 			break // EOF
 		}
-		
+
 		ts, _ := time.Parse(time.RFC3339, record[0])
 		val, _ := strconv.ParseFloat(record[1], 64)
-		
+
 		points = append(points, timeseries.DataPoint{
 			Timestamp: ts,
 			Value:     val,
 		})
 	}
-	
+
 	fmt.Printf("Successfully ingested %d rows from CSV.\n", len(points))
 
 	// Run offline anomaly detection over the entire historical dataset
 	series := timeseries.Series{Points: points}
 	detector := anomaly.NewMAD(anomaly.MADConfig{Threshold: 3.5})
-	
+
 	anomalies := detector.Detect(series)
 	fmt.Printf("Backtesting complete. Found %d historical anomalies.\n", len(anomalies))
 	for _, a := range anomalies {

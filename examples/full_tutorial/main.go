@@ -78,7 +78,7 @@ func main() {
 			fmt.Printf("   ├─ Timestamp:      %s\n", dp.Timestamp.Format("15:04:05"))
 			fmt.Printf("   ├─ Observed Value: %.2f\n", dp.Value)
 			fmt.Printf("   ├─ Expected Value: %.2f\n", result.AnomalyMeta.Expected)
-			fmt.Printf("   └─ Anomaly Score:  %.2f (Threshold: %.2f)\n", 
+			fmt.Printf("   └─ Anomaly Score:  %.2f (Threshold: %.2f)\n",
 				result.AnomalyMeta.Score, result.AnomalyMeta.Threshold)
 
 			// ----------------------------------------------------

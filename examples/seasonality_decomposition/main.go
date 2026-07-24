@@ -10,14 +10,14 @@ import (
 
 func main() {
 	// 1. CREATE A TIME SERIES WITH TREND AND SEASONALITY
-	// Imagine tracking the daily sales of a coffee shop. 
+	// Imagine tracking the daily sales of a coffee shop.
 	// - Trend: Sales are slowly going up over time as the shop gets popular.
 	// - Seasonality: Every 7 days (a week), there is a predictable spike on weekends.
 	// - Residual: Random noise (some rainy days, some lucky days).
-	
-	n := 30 // 30 days of data
+
+	n := 30     // 30 days of data
 	period := 7 // A repeating pattern every 7 days
-	
+
 	series := timeseries.Series{
 		Points: make([]timeseries.DataPoint, n),
 	}
@@ -33,7 +33,7 @@ func main() {
 		if i%period == 5 || i%period == 6 {
 			seasonality = 50.0 // Weekend spike!
 		}
-		
+
 		val = val + trend + seasonality
 
 		series.Points[i] = timeseries.DataPoint{
@@ -64,7 +64,7 @@ func main() {
 	fmt.Printf(" ├─ Underlying Trend: %.2f (General growth)\n", trend)
 	fmt.Printf(" ├─ Seasonal Effect:  %.2f (The weekly pattern)\n", season)
 	fmt.Printf(" └─ Residual Noise:   %.2f (Random unexplained variance)\n", residual)
-	
+
 	// Notice that raw ≈ trend + season + residual
 	fmt.Printf("\nMath Check: %.2f + %.2f + %.2f = %.2f\n", trend, season, residual, trend+season+residual)
 }
